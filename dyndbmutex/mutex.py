@@ -90,6 +90,7 @@ class MutexTable:
                     'expire_ts': expire_ts,
                     'holder': caller
                 },
+                # TODO: adding Attr("holder").eq(caller) should make it re-entrant
                 ConditionExpression=Attr("holder").eq(NO_HOLDER) | Attr('lockname').not_exists()
             )
         except botocore.exceptions.ClientError as e:
