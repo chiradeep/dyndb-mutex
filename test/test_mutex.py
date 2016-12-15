@@ -5,7 +5,7 @@ import base64
 import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from dyndbmutex.mutex import DynamoDbMutex, AcquireLockFailedError
+from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError
 
 
 def random_name():
