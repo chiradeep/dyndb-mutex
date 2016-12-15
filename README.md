@@ -45,7 +45,13 @@ Since the conditional write is atomic (test and set), this works very well. In f
 (We could even make the lock re-entrant since we have the owner/holder information, but this is not likely to be needed in the lambda usage pattern)
 
 # Setup
-The code will auto-create a DynamoDB table, but this could take at least 20 seconds. Use the `create-table` script in the scripts directory before using this mutex library.
+The default name for the Mutex table in DynamoDB is 'Mutex'. You can change this by setting an environment variable:
+
+```
+export DD_MUTEX_TABLE_NAME=FancyPantsMutex
+```
+
+The code will auto-create the mutex DynamoDB table, but this could take at least 20 seconds. Use the `create-table` script in the scripts directory before using this mutex library.
 
 
 # Notes and Limitations
@@ -59,5 +65,4 @@ Although the code is general-purpose and can be used outside of AWS lambda, note
 
 
 # TODO
-* Dynamodb table name is hardcoded. Remove this restriction.
 * No limits on timeout. Perhaps there should be one (300 seconds?)

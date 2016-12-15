@@ -3,6 +3,7 @@ import boto3
 import botocore
 import datetime
 import uuid
+import os
 from boto3.dynamodb.conditions import Attr
 
 
@@ -15,7 +16,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-MUTEX_TABLE_NAME = 'Mutex'
+DEFAULT_MUTEX_TABLE_NAME = 'Mutex'
 NO_HOLDER = '__empty__'
 
 
@@ -31,32 +32,32 @@ def timestamp_millis():
 class MutexTable:
 
     def __init__(self, region_name='us-west-2'):
-        # self.dbresource = boto3.resource('dynamodb', region_name='us-west-2',
-        #                                #endpoint_url="http://localhost:8000")
-        # self.dbclient = boto3.client('dynamodb', region_name='us-west-2',
-        #                            #endpoint_url="http://localhost:8000")
         self.dbresource = boto3.resource('dynamodb', region_name=region_name)
         self.dbclient = boto3.client('dynamodb', region_name=region_name)
+        self.table_name = os.environ.get('DD_MUTEX_TABLE_NAME')
+        if self.table_name is None:
+            self.table_name = DEFAULT_MUTEX_TABLE_NAME
+        logger.info("Mutex table name is " + self.table_name)
         self.get_table()
 
     def get_table(self):
         found = True
         try:
-            self.dbclient.describe_table(TableName=MUTEX_TABLE_NAME)
+            self.dbclient.describe_table(TableName=self.table_name)
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ResourceNotFoundException':
                 found = False
         if found:
-            return self.dbresource.Table(MUTEX_TABLE_NAME)
+            return self.dbresource.Table(self.table_name)
         return self.create_table()
 
     def delete_table(self):
-        self.dbclient.delete_table(TableName=MUTEX_TABLE_NAME)
+        self.dbclient.delete_table(TableName=self.table_name)
         logger.debug("Deleted table")
 
     def create_table(self):
         table = self.dbresource.create_table(
-            TableName=MUTEX_TABLE_NAME,
+            TableName=self.table_name,
             KeySchema=[
                 {
                     'AttributeName': 'lockname',
