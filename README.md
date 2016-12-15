@@ -5,7 +5,7 @@ A mutex implementation for [AWS Lambda] (https://aws.amazon.com/lambda/), levera
 Let's say you want to ensure that only 1 lambda function can access a resource (for example an instance i-8abd82c31) at a time
 
 ```
-   from dyndbmutex.mutex import DynamoDbMutex
+   from dyndbmutex.dyndbmutex import DynamoDbMutex
    # at the beginning of your lambda handler
    # generate a unique name for this instantiation of lambda
    my_name = str(uuid.uuid4()).split("-")[0]
@@ -23,7 +23,7 @@ Let's say you want to ensure that only 1 lambda function can access a resource (
 You can also use the `with` pattern:
 
 ```
-   from dyndbmutex.mutex import DynamoDbMutex, AcquireLockFailedError
+   from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError
    my_name = str(uuid.uuid4()).split("-")[0]
    m = DynamoDbMutex('i-8abd832c32', my_name, 20 * 1000)
    try:
