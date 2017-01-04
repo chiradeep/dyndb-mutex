@@ -28,7 +28,7 @@ THE SOFTWARE.
 
 setup(
     name='dyndbmutex',
-    version='0.1.5',
+    version='0.2.0',
     license='ASL v2.0',
     packages=["dyndbmutex"],
     description='Mutual Exclusion for AWS Lambda, using DynamoDB',
