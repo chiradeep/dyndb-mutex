@@ -7,11 +7,11 @@ import os
 from boto3.dynamodb.conditions import Attr
 
 
-logger = logging.getLogger('mutex')
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('dyndbmutex')
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(levelname)s %(asctime)s - %(name)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -77,7 +77,7 @@ class MutexTable:
         )
         logger.debug("Called create_table")
         table.wait_until_exists()
-        logger.debug("Created table")
+        logger.info("Created table")
         return table
 
     def write_lock_item(self, lockname, caller, waitms):
@@ -96,7 +96,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.debug("Write_item: lockname=" + lockname +
+                logger.warn("Write_item: lockname=" + lockname +
                              ", caller=" + caller + ", lock is being held")
                 return False
         logger.debug("Write_item: lockname=" + lockname +
@@ -115,7 +115,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.debug("clear_lock_item: lockname=" + lockname + ", caller=" + caller +
+                logger.warn("clear_lock_item: lockname=" + lockname + ", caller=" + caller +
                              " release failed")
                 return False
         logger.debug("clear_lock_item: lockname=" + lockname + ", caller=" + caller + " release succeeded")
@@ -136,7 +136,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.debug("Prune: lockname=" + lockname + ", caller=" + caller +
+                logger.warn("Prune: lockname=" + lockname + ", caller=" + caller +
                              " Prune failed")
                 return False
         logger.debug("Prune: lockname=" + lockname + ", caller=" + caller + " Prune succeeded")
@@ -156,12 +156,13 @@ class DynamoDbMutex:
     def lock(self):
         self.table.prune_expired(self.lockname, self.holder)
         self.locked = self.table.write_lock_item(self.lockname, self.holder, self.timeoutms)
-        logger.debug("mutex.lock(): lockname=" + self.lockname + ", locked = " + str(self.locked))
+        logger.info("mutex.lock(): lockname=" + self.lockname + ", locked = " + str(self.locked))
         return self.locked
 
     def release(self):
-        self.table.clear_lock_item(self.lockname, self.holder)
-        self.locked = False
+        released = self.table.clear_lock_item(self.lockname, self.holder)
+        self.locked = not released
+        logger.info("mutex.release(): lockname=" + self.lockname + ", locked = " + str(self.locked))
 
     def __enter__(self):
         locked = self.lock()
