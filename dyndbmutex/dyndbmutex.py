@@ -8,12 +8,14 @@ from boto3.dynamodb.conditions import Attr
 
 
 logger = logging.getLogger('dyndbmutex')
-logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s %(asctime)s - %(name)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+
+def setup_logging():
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(levelname)s %(asctime)s - %(name)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 
 DEFAULT_MUTEX_TABLE_NAME = 'Mutex'

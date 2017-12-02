@@ -14,6 +14,11 @@ def random_name():
 
 class TestDynamoDbMutex(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        setup_logging()
+        super(TestDynamoDbMutex, cls).setUpClass()
+
     def test_create(self):
         m = DynamoDbMutex(random_name(), "myself", 3 * 1000)
         assert(m.lock())
