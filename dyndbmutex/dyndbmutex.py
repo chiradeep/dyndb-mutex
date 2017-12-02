@@ -41,15 +41,15 @@ class MutexTable:
         self.get_table()
 
     def get_table(self):
-        found = True
         try:
             self.dbclient.describe_table(TableName=self.table_name)
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                found = False
-        if found:
+                return self.create_table()
+            else:
+                raise
+        else:
             return self.dbresource.Table(self.table_name)
-        return self.create_table()
 
     def delete_table(self):
         self.dbclient.delete_table(TableName=self.table_name)
