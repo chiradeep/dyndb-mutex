@@ -4,6 +4,9 @@ import base64
 import sys
 import os
 from os import path
+
+from concurrent.futures import ThreadPoolExecutor
+
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError, setup_logging
 
@@ -81,6 +84,30 @@ class TestDynamoDbMutex(unittest.TestCase):
         m1.release()
         assert(m2.is_locked())
         m2.release()
+
+    def test_table_creation_race(self):
+        old_table_name = os.environ.get('DD_MUTEX_TABLE_NAME')
+        try:
+            table_name = 'Mutex-' + random_name()
+            os.environ['DD_MUTEX_TABLE_NAME'] = table_name
+            cls = DynamoDbMutex
+
+            def create_mutex(i):
+                mutex_name = random_name()
+                mutex = cls(name=mutex_name, holder='caller%i' % i)
+                self.assertEquals(mutex.table.table_name, table_name)
+                return mutex
+
+            num_threads = 2
+            with ThreadPoolExecutor(max_workers=num_threads) as pool:
+                mutexes = pool.map(create_mutex, range(num_threads))
+                for method in cls.lock, cls.release, cls.delete_table:
+                    pool.map(method, mutexes)
+        finally:
+            if old_table_name is None:
+                del os.environ['DD_MUTEX_TABLE_NAME']
+            else:
+                os.environ['DD_MUTEX_TABLE_NAME'] = old_table_name
 
 
 if __name__ == "__main__":
