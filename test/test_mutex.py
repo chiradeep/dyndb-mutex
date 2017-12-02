@@ -1,15 +1,15 @@
 import time
-import uuid
 import unittest
 import base64
 import sys
+import os
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError
+from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError, setup_logging
 
 
 def random_name():
-    return base64.b32encode(str(uuid.uuid4()))[:7]
+    return base64.b32encode(os.urandom(5))[:7].decode('ascii')
 
 
 class TestDynamoDbMutex(unittest.TestCase):
