@@ -56,29 +56,36 @@ class MutexTable:
         logger.debug("Deleted table")
 
     def create_table(self):
-        table = self.dbresource.create_table(
-            TableName=self.table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'lockname',
-                    'KeyType': 'HASH'  # Partition key
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'lockname',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 2,
-                'WriteCapacityUnits': 2
-            }
-        )
-        logger.debug("Called create_table")
-        table.wait_until_exists()
-        logger.info("Created table")
-        return table
+        try:
+            table = self.dbresource.create_table(
+                TableName=self.table_name,
+                KeySchema=[
+                    {
+                        'AttributeName': 'lockname',
+                        'KeyType': 'HASH'  # Partition key
+                    },
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'lockname',
+                        'AttributeType': 'S'
+                    },
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 2,
+                    'WriteCapacityUnits': 2
+                }
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceInUseException':
+                logger.debug("Table already exists", exc_info=e)
+            else:
+                raise
+        else:
+            logger.debug("Called create_table")
+            table.wait_until_exists()
+            logger.info("Created table")
+            return table
 
     def write_lock_item(self, lockname, caller, waitms):
         expire_ts = timestamp_millis() + waitms
@@ -124,7 +131,7 @@ class MutexTable:
     def prune_expired(self, lockname, caller):
         now = timestamp_millis()
         logger.debug("Prune: lockname=" + lockname + ", caller=" + caller +
-                     ", Time now is " + str(now))
+                     ", Time now is %s" + str(now))
         try:
             self.get_table().put_item(
                 Item={
@@ -145,8 +152,10 @@ class MutexTable:
 
 class DynamoDbMutex:
 
-    def __init__(self, name, holder=str(uuid.uuid4()),
+    def __init__(self, name, holder=None,
                  timeoutms=30 * 1000, region_name='us-west-2'):
+        if holder is None:
+            holder = str(uuid.uuid4())
         self.lockname = name
         self.holder = holder
         self.timeoutms = timeoutms
