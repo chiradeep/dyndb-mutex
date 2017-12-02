@@ -36,9 +36,7 @@ class MutexTable:
     def __init__(self, region_name='us-west-2'):
         self.dbresource = boto3.resource('dynamodb', region_name=region_name)
         self.dbclient = boto3.client('dynamodb', region_name=region_name)
-        self.table_name = os.environ.get('DD_MUTEX_TABLE_NAME')
-        if self.table_name is None:
-            self.table_name = DEFAULT_MUTEX_TABLE_NAME
+        self.table_name = os.environ.get('DD_MUTEX_TABLE_NAME', DEFAULT_MUTEX_TABLE_NAME)
         logger.info("Mutex table name is " + self.table_name)
         self.get_table()
 
