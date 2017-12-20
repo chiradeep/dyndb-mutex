@@ -1,5 +1,6 @@
 # lambda-mutex
-A mutex implementation for [AWS Lambda] (https://aws.amazon.com/lambda/), leveraging AWS DynamoDB
+A mutex implementation  leveraging AWS DynamoDB.
+Although this was built for use in  [AWS Lambda](https://aws.amazon.com/lambda), note that you can use this mutex implementation in any context - even outside AWS.
 
 # Usage
 Let's say you want to ensure that only 1 lambda function can access a resource (for example an instance i-8abd82c31) at a time
