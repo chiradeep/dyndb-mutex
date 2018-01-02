@@ -2,6 +2,12 @@
 A mutex implementation  leveraging [AWS DynamoDB](https://aws.amazon.com/dynamodb/)
 Although this was built for use in  [AWS Lambda](https://aws.amazon.com/lambda), note that you can use this mutex implementation in any context - even outside AWS.
 
+# Install
+```
+sudo pip install dyndbmutex
+```
+or checkout this repository and run `python setup.py`. Or download a release from the releases page and go from there.
+
 # Usage
 Let's say you want to ensure that only 1 python function can access a resource (for example an AWS instance `i-8abd82c31`) at a time
 
