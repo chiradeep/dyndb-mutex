@@ -16,7 +16,7 @@ Let's say you want to ensure that only 1 python function can access a resource (
    # at the beginning of your function
    # generate a unique name for this process/thread
    my_name = str(uuid.uuid4()).split("-")[0]
-   m = DynamoDbMutex(lockname='i-8abd832c32', holder=my_name, timeoutms=20 * 1000)
+   m = DynamoDbMutex('i-8abd832c32', holder=my_name, timeoutms=20 * 1000)
    locked = m.lock()
    if locked:
       # critical section begin
