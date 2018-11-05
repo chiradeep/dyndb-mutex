@@ -68,7 +68,7 @@ Although the code is general-purpose and can be used outside of AWS Lambda, note
 * Does not detect/prevent deadlocks. There is no spin lock, but the mutex user could create one by spinning until an acquire succeeds. Within a Lambda function, one should avoid taking more than 1 lock.
 * Not re-entrant. If a thread (e.g.,a lambda function) tries to re-acquire a lock it already holds, it will block
 * Not designed for speed. The DynamoDb table backing the locks is generally provisioned as low throughput (2 ops/sec)
-* No cleanup. Each named mutex gets a row in the Dynamodb table. These rows are never cleaned up even if nobody is using the mutex. It should be trivial to write a lambda to vaccuum these rows, however, given the small size of the row and the infinite capacity of DynamoDb, it is not likely to be a problem, if used for its intended purpose.
+* Cleanup - the mutex table is created with the [TTL](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html) feature. By default, the TTL is 2 days; after 2 days of disuse, the row created to hold the mutex should get automatically deleted. You can use set the `ttl_minutes` in the constructor to choose a different TTL
 
 
 # TODO

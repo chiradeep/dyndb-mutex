@@ -20,7 +20,7 @@ def setup_logging():
 
 DEFAULT_MUTEX_TABLE_NAME = 'Mutex'
 NO_HOLDER = '__empty__'
-
+TWO_DAYS_IN_MINUTES = 2*24*60
 
 class AcquireLockFailedError(Exception):
         pass
@@ -33,11 +33,12 @@ def timestamp_millis():
 
 class MutexTable:
 
-    def __init__(self, region_name='us-west-2'):
+    def __init__(self, region_name='us-west-2', ttl_minutes=TWO_DAYS_IN_MINUTES):
         self.dbresource = boto3.resource('dynamodb', region_name=region_name)
         self.dbclient = boto3.client('dynamodb', region_name=region_name)
         self.table_name = os.environ.get('DD_MUTEX_TABLE_NAME', DEFAULT_MUTEX_TABLE_NAME)
         logger.info("Mutex table name is " + self.table_name)
+        self.ttl_minutes = ttl_minutes
         self.get_table()
 
     def get_table(self):
@@ -53,7 +54,10 @@ class MutexTable:
 
     def delete_table(self):
         self.dbclient.delete_table(TableName=self.table_name)
-        logger.debug("Deleted table")
+        logger.info("Deleted table " + self.table_name)
+
+    def get_lock(self, lockname):
+        return self.get_table().get_item(Key={'lockname': lockname})
 
     def create_table(self):
         try:
@@ -84,11 +88,21 @@ class MutexTable:
         else:
             logger.debug("Called create_table")
             table.wait_until_exists()
-            logger.info("Created table")
+            logger.info("Created table " + self.table_name)
+            try: 
+                self.dbclient.update_time_to_live(
+                TableName=self.table_name,
+                TimeToLiveSpecification={
+                 'Enabled': True,
+                 'AttributeName': 'ttl'
+                })
+            except botocore.exceptions.ClientError as e:
+                logger.error("Error setting TTL on table", exc_info=e)
             return table
 
     def write_lock_item(self, lockname, caller, waitms):
         expire_ts = timestamp_millis() + waitms
+        ttl = expire_ts + self.ttl_minutes*60
         logger.debug("Write_item: lockname=" + lockname + ", caller=" +
                      caller + ", Expire time is " + str(expire_ts))
         try:
@@ -96,14 +110,15 @@ class MutexTable:
                 Item={
                     'lockname': lockname,
                     'expire_ts': expire_ts,
-                    'holder': caller
+                    'holder': caller,
+                    'ttl': ttl
                 },
                 # TODO: adding Attr("holder").eq(caller) should make it re-entrant
                 ConditionExpression=Attr("holder").eq(NO_HOLDER) | Attr('lockname').not_exists()
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.warn("Write_item: lockname=" + lockname +
+                logger.warning("Write_item: lockname=" + lockname +
                              ", caller=" + caller + ", lock is being held")
                 return False
         logger.debug("Write_item: lockname=" + lockname +
@@ -122,7 +137,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.warn("clear_lock_item: lockname=" + lockname + ", caller=" + caller +
+                logger.warning("clear_lock_item: lockname=" + lockname + ", caller=" + caller +
                              " release failed")
                 return False
         logger.debug("clear_lock_item: lockname=" + lockname + ", caller=" + caller + " release succeeded")
@@ -143,7 +158,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.warn("Prune: lockname=" + lockname + ", caller=" + caller +
+                logger.warning("Prune: lockname=" + lockname + ", caller=" + caller +
                              " Prune failed")
                 return False
         logger.debug("Prune: lockname=" + lockname + ", caller=" + caller + " Prune succeeded")
@@ -153,13 +168,13 @@ class MutexTable:
 class DynamoDbMutex:
 
     def __init__(self, name, holder=None,
-                 timeoutms=30 * 1000, region_name='us-west-2'):
+                 timeoutms=30 * 1000, region_name='us-west-2', ttl_minutes=TWO_DAYS_IN_MINUTES):
         if holder is None:
             holder = str(uuid.uuid4())
         self.lockname = name
         self.holder = holder
         self.timeoutms = timeoutms
-        self.table = MutexTable(region_name=region_name)
+        self.table = MutexTable(region_name=region_name, ttl_minutes=ttl_minutes)
         self.locked = False
 
     def lock(self):
@@ -184,6 +199,9 @@ class DynamoDbMutex:
 
     def is_locked(self):
         return self.locked
+    
+    def get_raw_lock(self):
+        return self.table.get_lock(self.lockname)
 
     @staticmethod
     def delete_table(region_name='us-west-2'):
