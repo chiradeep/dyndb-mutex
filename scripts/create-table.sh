@@ -9,3 +9,4 @@ aws dynamodb create-table \
         AttributeName=lockname,AttributeType=S \
     --key-schema AttributeName=lockname,KeyType=HASH \
     --provisioned-throughput ReadCapacityUnits=2,WriteCapacityUnits=2
+aws dynamodb update-time-to-live --table-name  $MUTEX_TABLE_NAME --time-to-live-specification "Enabled=true, AttributeName=ttl"
