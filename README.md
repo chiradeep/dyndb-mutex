@@ -16,7 +16,7 @@ Let's say you want to ensure that only 1 python function can access a resource (
    # at the beginning of your function
    # generate a unique name for this process/thread
    my_name = str(uuid.uuid4()).split("-")[0]
-   m = DynamoDbMutex('i-8abd832c32', holder=my_name, timeoutms=20 * 1000)
+   m = DynamoDbMutex('i-8abd832c32', holder=my_name, timeoutms=200 * 1000)
    locked = m.lock()
    if locked:
       # critical section begin
@@ -32,7 +32,7 @@ You can also use the `with` pattern:
 ```
    from dyndbmutex.dyndbmutex import DynamoDbMutex, AcquireLockFailedError
    my_name = str(uuid.uuid4()).split("-")[0]
-   m = DynamoDbMutex('i-8abd832c32', my_name, 20 * 1000)
+   m = DynamoDbMutex('i-8abd832c32', my_name, 200 * 1000)
    try:
        with m:
           # critical section
@@ -64,8 +64,9 @@ The code will auto-create the mutex DynamoDB table, but this could take at least
 # Notes and Limitations
 Although the code is general-purpose and can be used outside of AWS Lambda, note the following limitations:
 
-* Not designed for fine-grained parallelism. Generally, it is expected that you acquire a lock and hold it for the duration of the lambda function
+* Not designed for fine-grained parallelism. Generally, it is expected that you acquire a lock and hold it for a short duration (seconds)
 * Does not detect/prevent deadlocks. There is no spin lock, but the mutex user could create one by spinning until an acquire succeeds. Within a Lambda function, one should avoid taking more than 1 lock.
+* Assumes that client-side delays, pauses and clock drift are all small relative to the expiry time of a lock. Therefore, use a large timeout if there are little-to-no guarantees on how long your lock acquirer can get paused (e.g., due to GC, long lived critical sections). See [this](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more.
 * Not re-entrant. If a thread (e.g.,a lambda function) tries to re-acquire a lock it already holds, it will block
 * Not designed for speed. The DynamoDb table backing the locks is generally provisioned as low throughput (2 ops/sec)
 * Cleanup - the mutex table is created with the [TTL](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html) feature. By default, the TTL is 2 days; after 2 days of disuse, the row created to hold the mutex should get automatically deleted. You can use set the `ttl_minutes` in the constructor to choose a different TTL
