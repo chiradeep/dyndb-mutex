@@ -24,9 +24,12 @@ class TestDynamoDbMutex(unittest.TestCase):
         super(TestDynamoDbMutex, cls).setUpClass()
 
     def setUp(self):
-        #python 3.6 emits warnings due to requests which can be ignoredz    
-        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
-
+        #python 3.6 emits warnings due to requests which can be ignoredz
+        try:
+            warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        except NameError:
+            # thrown in python 2.7 as ResourceWarning is not defined
+            pass
     def test_create(self):
         m = DynamoDbMutex(random_name(), "myself", 3 * 1000)
         assert(m.lock())
