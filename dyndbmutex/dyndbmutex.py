@@ -34,8 +34,9 @@ def timestamp_millis():
 class MutexTable:
 
     def __init__(self, region_name='us-west-2', ttl_minutes=TWO_DAYS_IN_MINUTES):
-        self.dbresource = boto3.resource('dynamodb', region_name=region_name)
-        self.dbclient = boto3.client('dynamodb', region_name=region_name)
+        endpoint_url = os.environ.get("DYNAMO_DB_URL", None)
+        self.dbresource = boto3.resource('dynamodb', region_name=region_name, endpoint_url=endpoint_url)
+        self.dbclient = boto3.client('dynamodb', region_name=region_name, endpoint_url=endpoint_url)
         self.table_name = os.environ.get('DD_MUTEX_TABLE_NAME', DEFAULT_MUTEX_TABLE_NAME)
         logger.info("Mutex table name is " + self.table_name)
         self.ttl_minutes = ttl_minutes
@@ -89,7 +90,7 @@ class MutexTable:
             logger.debug("Called create_table")
             table.wait_until_exists()
             logger.info("Created table " + self.table_name)
-            try: 
+            try:
                 self.dbclient.update_time_to_live(
                 TableName=self.table_name,
                 TimeToLiveSpecification={
@@ -199,7 +200,7 @@ class DynamoDbMutex:
 
     def is_locked(self):
         return self.locked
-    
+
     def get_raw_lock(self):
         return self.table.get_lock(self.lockname)
 
