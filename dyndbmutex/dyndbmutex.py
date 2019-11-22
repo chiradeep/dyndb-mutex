@@ -119,7 +119,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.warning("Write_item: lockname=" + lockname +
+                logger.info("Write_item: lockname=" + lockname +
                              ", caller=" + caller + ", lock is being held")
                 return False
         logger.debug("Write_item: lockname=" + lockname +
@@ -159,7 +159,7 @@ class MutexTable:
             )
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                logger.warning("Prune: lockname=" + lockname + ", caller=" + caller +
+                logger.info("Prune: lockname=" + lockname + ", caller=" + caller +
                              " Prune failed")
                 return False
         logger.debug("Prune: lockname=" + lockname + ", caller=" + caller + " Prune succeeded")
