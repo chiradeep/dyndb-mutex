@@ -11,13 +11,13 @@ Mutual Exclusion using AWS DynamoDB
 
 setup(
     name='dyndbmutex',
-    version='0.4.0',
+    version='0.4.1',
     license='ASL v2.0',
     packages=['dyndbmutex'],
     description='Mutual Exclusion using AWS DynamoDB',
     long_description=README,
     url='https://github.com/chiradeep/dyndb-mutex',
-    download_url='https://github.com/chiradeep/dyndb-mutex/releases/download/v0.40/dyndbmutex-0.4.0.tar.gz',
+    download_url='https://github.com/chiradeep/dyndb-mutex/releases/download/v0.41/dyndbmutex-0.4.1.tar.gz',
     author='chiradeep',
     author_email='chiradeep@apache.org',
     install_requires=['boto3>=1.9.0'],
