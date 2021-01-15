@@ -100,7 +100,7 @@ class TestDynamoDbMutex(unittest.TestCase):
         m1 = DynamoDbMutex(name=name, holder=caller, timeoutms=2 * 1000, ttl_minutes=2)
         m1.lock()
         item = m1.get_raw_lock()
-        diff = item['Item']['ttl'] - item['Item']['expire_ts']
+        diff = item['Item']['ttl'] - item['Item']['expire_ts'] // 1000
         print (diff)
         self.assertTrue(diff > 0 and diff <= 2*60)
         DynamoDbMutex.delete_table()

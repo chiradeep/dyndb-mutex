@@ -103,7 +103,7 @@ class MutexTable:
 
     def write_lock_item(self, lockname, caller, waitms):
         expire_ts = timestamp_millis() + waitms
-        ttl = expire_ts + self.ttl_minutes*60
+        ttl = expire_ts//1000 + self.ttl_minutes*60
         logger.debug("Write_item: lockname=" + lockname + ", caller=" +
                      caller + ", Expire time is " + str(expire_ts))
         try:
